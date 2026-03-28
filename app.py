@@ -5,37 +5,30 @@ import whatsappservice
 
 app = Flask(__name__)
 
-# 🔐 Variables de entorno
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 
 
 @app.route('/welcome', methods=['GET'])
 def index():
-    return 'welcome developer'
+    return 'Perfumería Bot Activo 🌸'
 
 
-# ✅ Verificación del webhook
+# 🔐 Verificación webhook
 @app.route('/whatsapp', methods=['GET'])
 def verify_token():
-    try:
-        token = request.args.get("hub.verify_token")
-        challenge = request.args.get("hub.challenge")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
 
-        if token == VERIFY_TOKEN:
-            return challenge
-        return "Token inválido", 403
-
-    except Exception as e:
-        print("ERROR VERIFY:", e)
-        return "Error", 500
+    if token == VERIFY_TOKEN:
+        return challenge
+    return "Error de verificación", 403
 
 
-# ✅ Recepción de mensajes
+# 📩 Recepción mensajes
 @app.route('/whatsapp', methods=['POST'])
 def receive_message():
     try:
         body = request.get_json()
-        print("BODY:", body)  # 🔍 debug clave
 
         entry = body.get("entry", [])[0]
         changes = entry.get("changes", [])[0]
@@ -43,7 +36,6 @@ def receive_message():
 
         messages = value.get("messages")
 
-        # 🔒 Evita errores cuando no hay mensajes (status updates)
         if not messages:
             return "EVENT_RECEIVED"
 
@@ -51,66 +43,99 @@ def receive_message():
         number = message.get("from")
 
         text = util.GetTextUser(message)
-        print("MENSAJE:", text)
+        print("Cliente:", text)
 
-        generate_message(text, number)
+        generate_response(text, number)
 
         return "EVENT_RECEIVED"
 
     except Exception as e:
-        print("ERROR POST:", e)
+        print("ERROR:", e)
         return "EVENT_RECEIVED"
 
 
-# 🧠 Lógica principal
-def generate_message(text, number):
+# 🧠 Lógica del negocio
+def generate_response(text, number):
     text = text.lower()
 
-    if "hola" in text:
-        data = util.TextMessage("👋 Hola, ¿cómo puedo ayudarte?", number)
+    # 👋 Bienvenida
+    if "hola" in text or "buenas" in text:
+        data = util.TextMessage(
+            "🌸 ¡Hola! Bienvenido a nuestra perfumería\n\n"
+            "Puedes preguntarme por:\n"
+            "💰 precios\n"
+            "🧴 perfumes disponibles\n"
+            "🚚 envío\n"
+            "📍 ubicación",
+            number
+        )
 
-    elif "gracias" in text:
-        data = util.TextMessage("🙏 Gracias por escribir.", number)
+    # 🧴 Catálogo
+    elif "perfumes" in text or "catalogo" in text:
+        data = util.TextMessage(
+            "🧴 Tenemos:\n\n"
+            "• Dior Sauvage\n"
+            "• Chanel No.5\n"
+            "• Bleu de Chanel\n"
+            "• Versace Eros\n\n"
+            "Escríbeme el nombre para ver el precio 😉",
+            number
+        )
 
-    elif "menu" in text or "opciones" in text:
-        data = util.ListMessage(number)
+    # 💰 Precios
+    elif "precio" in text:
+        data = util.TextMessage(
+            "💰 Precios referenciales:\n\n"
+            "• Dior Sauvage → S/350\n"
+            "• Chanel No.5 → S/420\n"
+            "• Versace Eros → S/300\n\n"
+            "Pregunta por uno específico 👀",
+            number
+        )
 
-    elif "imagen" in text:
-        data = util.ImageMessage(number)
+    # 🚚 Envío
+    elif "envio" in text or "delivery" in text:
+        data = util.TextMessage(
+            "🚚 Envíos:\n\n"
+            "• Trujillo → S/10\n"
+            "• Provincias → S/20\n\n"
+            "Tiempo: 24-48 horas ⏳",
+            number
+        )
 
-    elif "video" in text:
-        data = util.VideoMessage(number)
-
-    elif "documento" in text:
-        data = util.DocumentoMessage(number)
-
-    elif "audio" in text:
-        data = util.AudioMessage(number)
-
-    elif "ubicacion" in text:
+    # 📍 Ubicación
+    elif "ubicacion" in text or "donde" in text:
         data = util.LocationMessage(number)
 
-    elif "boton" in text:
-        data = util.BotonesMessage(number)
+    # 🙏 Gracias
+    elif "gracias" in text:
+        data = util.TextMessage(
+            "🙏 ¡Gracias a ti! Estamos para ayudarte 🌸",
+            number
+        )
 
+    # 🤖 Default
     else:
-        data = util.TextMessage(f"Echo: {text}", number)
+        data = util.TextMessage(
+            "🤖 No entendí bien.\n\n"
+            "Puedes escribir:\n"
+            "• perfumes\n"
+            "• precios\n"
+            "• envío\n"
+            "• ubicación",
+            number
+        )
 
     send_message(data)
 
 
-# 📤 Envío centralizado
+# 📤 Envío
 def send_message(data):
     try:
-        response = whatsappservice.SendMessageWhatsapp(data)
-
-        if not response:
-            print("❌ Error enviando mensaje")
-
+        whatsappservice.SendMessageWhatsapp(data)
     except Exception as e:
-        print("ERROR SEND:", e)
+        print("ERROR ENVÍO:", e)
 
 
-# 🚀 Producción
 if __name__ == "__main__":
     app.run(debug=True)
