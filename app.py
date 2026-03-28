@@ -12,7 +12,7 @@ def VerifyToken():
 
     try:
             
-        accessToken = "EAF3gkosTIZAQBRCH0ChZAMZCh94RHh5HZByzOUoHMM5gRYq0FMD4qWeJpSetd29cQzUsTjx4DeHp9PaPOM9VtdUVczPIspjd7nXZCHZBiyTZA6PSq2666Oh86IAwWAyXDYF6dXAxx7TZBYKVVZCzZAVjXzU73ODPGTUZCe8aMg58z4E5LMqEVYD8USUBAryWzlhTkwjFwZDZD"
+        accessToken = "3007884515151151515"
         token = request.args.get("hub.verify_token")
         challenge = request.args.get("hub.challenge")
 
